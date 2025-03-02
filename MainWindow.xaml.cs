@@ -42,6 +42,9 @@ namespace TvPourTous
             // Charger (ou créer) le fichier m3u.json contenant les sources M3U
             LoadM3USources();
 
+            // Démarrer le serveur API
+            Api.ApiServer.Start();
+
             // Une fois la fenêtre chargée, tester les URL et remplir le ComboBox avec celles valides
             this.Loaded += async (s, e) => await PopulateValidM3USourcesAsync();
         }
@@ -243,24 +246,34 @@ namespace TvPourTous
             }
         }
 
-        private void PlayStream(string url)
+        public void PlayStream(string url)
         {
             _currentURL = url;
 
-            // S'assurer qu'aucun média précédent ne persiste
-            StopAndDisposeMedia(_mediaPlayer);
-
-            try
+            if (_fullScreenWindow != null && _fullScreenWindow.IsVisible)
             {
-                var media = new Media(_libVLC, new Uri(url));
-                _mediaPlayer.Media = media;
-                _mediaPlayer.Play();
+                // Si la fenêtre plein écran est active, change la chaîne dedans
+                _fullScreenWindow.ChangeChannel(url);
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show($"Erreur lors de la lecture du flux : {ex.Message}");
+                // Sinon, jouer dans la fenêtre principale
+                StopAndDisposeMedia(_mediaPlayer);
+
+                try
+                {
+                    var media = new Media(_libVLC, new System.Uri(url));
+                    _mediaPlayer.Media = media;
+                    _mediaPlayer.Play();
+                }
+                catch (System.Exception ex)
+                {
+                    MessageBox.Show($"Erreur lors de la lecture du flux : {ex.Message}");
+                }
             }
         }
+
+
 
         private async void comboBoxM3U_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -384,20 +397,31 @@ namespace TvPourTous
         {
             if (!string.IsNullOrEmpty(_currentURL))
             {
-                // Arrêter et libérer le média dans la fenêtre principale
-                StopAndDisposeMedia(_mediaPlayer);
+                // Vérifie si une fenêtre plein écran est déjà ouverte
+                if (_fullScreenWindow == null || !_fullScreenWindow.IsVisible)
+                {
+                    StopAndDisposeMedia(_mediaPlayer);
 
-                // Créer et afficher la fenêtre plein écran
-                var fullScreen = new FullScreenWindow(_libVLC, _currentURL, this);
-
-                // Lorsqu'on quitte le plein écran (par Échap ou fermeture), arrêter le flux plein écran et relancer le flux dans la fenêtre principale
-                fullScreen.Closed += FullScreen_Closed;
-                fullScreen.Show();
+                    _fullScreenWindow = new FullScreenWindow(_libVLC, _currentURL, this);
+                    _fullScreenWindow.Closed += FullScreen_Closed;
+                    _fullScreenWindow.Show();
+                }
             }
         }
 
+        public Dictionary<string, string> GetChannels()
+        {
+            // Retourne une copie pour éviter les modifications accidentelles
+            return _channels.ToDictionary(entry => entry.Key, entry => entry.Value);
+        }
 
+        // Rendre PlayStream accessible publiquement (ceci appelle votre méthode existante)
+        public void ChangeChannel(string url)
+        {
+            PlayStream(url);
+        }
 
+        // Assurez-vous que PlayStream est accessible (si besoin, le rendre public)
 
         private void btnManageSources_Click(object sender, RoutedEventArgs e)
         {
@@ -419,6 +443,7 @@ namespace TvPourTous
                 SaveM3USources();
             }
         }
+
 
         private void FullScreen_Closed(object sender, EventArgs e)
         {
@@ -464,6 +489,8 @@ namespace TvPourTous
             }
         }
 
+
+
         private void ExitFullScreen()
         {
             MainGrid.Visibility = Visibility.Visible;
@@ -498,6 +525,8 @@ namespace TvPourTous
                     listBoxChannels.Items.Add(channel.Key);
             }
         }
+
+        private FullScreenWindow _fullScreenWindow;
 
         private DateTime _lastClickTime;
         private readonly TimeSpan _doubleClickThreshold = TimeSpan.FromMilliseconds(300); // Temps max entre 2 clics

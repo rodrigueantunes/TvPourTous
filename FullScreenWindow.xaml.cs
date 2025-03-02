@@ -11,7 +11,7 @@ namespace TvPourTous
     {
         private MediaPlayer _fullScreenMediaPlayer;
         private readonly LibVLC _libVLC;
-        private readonly string _url;
+        private string _currentUrl;
         private readonly Window _mainWindow;
 
         public FullScreenWindow(LibVLC libVLC, string url, Window mainWindow)
@@ -19,70 +19,82 @@ namespace TvPourTous
             InitializeComponent();
 
             _libVLC = libVLC;
-            _url = url;
+            _currentUrl = url;
             _mainWindow = mainWindow;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            // Créer un nouveau MediaPlayer
-            _fullScreenMediaPlayer = new MediaPlayer(_libVLC);
+            // Initialisation du MediaPlayer si non initialisé
+            if (_fullScreenMediaPlayer == null)
+                _fullScreenMediaPlayer = new MediaPlayer(_libVLC);
 
-            // Associer le MediaPlayer au contrôle VideoView de la fenêtre plein écran
+            // Associer le MediaPlayer au contrôle VideoView
             videoViewFullScreen.MediaPlayer = _fullScreenMediaPlayer;
 
-            // Charger et jouer le flux (même URL)
-            var media = new Media(_libVLC, new Uri(_url));
-            _fullScreenMediaPlayer.Media = media;
-            _fullScreenMediaPlayer.Play();
+            // Charger et jouer le flux initial
+            ChangeChannel(_currentUrl);
 
-            // Déplacer la fenêtre sur le même écran que la fenêtre principale
+            // Déplacer la fenêtre sur l'écran actif
             MoveToActiveScreen();
+        }
+
+        public void ChangeChannel(string url)
+        {
+            if (_fullScreenMediaPlayer != null)
+            {
+                // Arrêter l'ancien flux avant d'en charger un nouveau
+                _fullScreenMediaPlayer.Stop();
+
+                var media = new Media(_libVLC, new Uri(url));
+                _fullScreenMediaPlayer.Media = media;
+                _fullScreenMediaPlayer.Play();
+
+                // Mettre à jour l'URL courante
+                _currentUrl = url;
+            }
         }
 
         private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Escape)
             {
-                // Arrêter et libérer le MediaPlayer avant de fermer la fenêtre
-                if (_fullScreenMediaPlayer != null)
-                {
-                    _fullScreenMediaPlayer.Stop();
-                    _fullScreenMediaPlayer.Dispose();
-                    _fullScreenMediaPlayer = null;
-                }
-                this.Close();
+                // Fermer la fenêtre plein écran proprement
+                CloseFullScreen();
             }
         }
 
         private void MoveToActiveScreen()
         {
-            // Récupérer l'écran où se trouve la fenêtre principale
             var mainWindowHandle = new WindowInteropHelper(_mainWindow).Handle;
             var screen = Screen.FromHandle(mainWindowHandle);
 
-            // Appliquer la taille et la position de l'écran détecté
-            this.WindowStyle = WindowStyle.None;
-            this.WindowState = WindowState.Normal; // repasse brièvement en mode normal
-            this.Left = screen.Bounds.Left;
-            this.Top = screen.Bounds.Top;
-            this.Width = screen.Bounds.Width;
-            this.Height = screen.Bounds.Height;
-
-            // Puis maximiser pour être en plein écran
-            this.WindowState = WindowState.Maximized;
+            // Ajuster la fenêtre plein écran à la taille de l'écran actif
+            WindowStyle = WindowStyle.None;
+            WindowState = WindowState.Normal;
+            Left = screen.Bounds.Left;
+            Top = screen.Bounds.Top;
+            Width = screen.Bounds.Width;
+            Height = screen.Bounds.Height;
+            WindowState = WindowState.Maximized;
         }
 
         protected override void OnClosed(EventArgs e)
         {
-            // Assurer que le MediaPlayer est arrêté et libéré quand la fenêtre se ferme
+            // Arrêter et libérer le MediaPlayer proprement
+            CloseFullScreen();
+            base.OnClosed(e);
+        }
+
+        private void CloseFullScreen()
+        {
             if (_fullScreenMediaPlayer != null)
             {
                 _fullScreenMediaPlayer.Stop();
                 _fullScreenMediaPlayer.Dispose();
                 _fullScreenMediaPlayer = null;
             }
-            base.OnClosed(e);
+            Close();
         }
 
         private DateTime _lastClickTime;
@@ -98,11 +110,11 @@ namespace TvPourTous
                 if (interval < _doubleClickThreshold)
                 {
                     // Double-clic détecté => Quitter le plein écran
-                    this.Close();
+                    CloseFullScreen();
                 }
 
                 _lastClickTime = now;
-                e.Handled = true; // Empêcher d'autres éléments d'intercepter l'événement
+                e.Handled = true;
             }
         }
     }
