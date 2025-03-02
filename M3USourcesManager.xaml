@@ -1,0 +1,60 @@
+﻿<Window x:Class="TvPourTous.M3USourcesManager"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Gérer les sources M3U" Height="300" Width="400"
+        Background="#121212" FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <!-- Style de bouton moderne -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#1E88E5"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Padding" Value="5,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Style pour la ListBox -->
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Liste des sources -->
+        <ListBox x:Name="listBoxSources" Grid.Row="0" DisplayMemberPath="Key" />
+
+        <!-- Boutons pour ajouter, modifier, supprimer et sauvegarder -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="btnAdd" Content="Ajouter" Width="90" Margin="0,0,10,0" Click="btnAdd_Click"/>
+            <Button x:Name="btnModify" Content="Modifier" Width="90" Margin="0,0,10,0" Click="btnModify_Click"/>
+            <Button x:Name="btnRemove" Content="Supprimer" Width="90" Margin="0,0,10,0" Click="btnRemove_Click"/>
+            <Button x:Name="btnSave" Content="Sauvegarder" Width="90" Click="btnSave_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,68 @@
+﻿<Window x:Class="TvPourTous.EditM3USourceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Modifier une source M3U" Height="200" Width="300"
+        Background="#121212" FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <!-- Style pour les Labels -->
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+
+        <!-- Style pour les TextBox -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderBrush" Value="#424242"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+
+        <!-- Style de bouton moderne -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#1E88E5"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Padding" Value="5,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Label Grid.Row="0" Grid.Column="0" Content="Nom:" Margin="0,0,5,5"/>
+        <TextBox Grid.Row="0" Grid.Column="1" x:Name="txtSourceName" Margin="0,0,0,5"/>
+        <Label Grid.Row="1" Grid.Column="0" Content="URL:" Margin="0,0,5,5"/>
+        <TextBox Grid.Row="1" Grid.Column="1" x:Name="txtSourceUrl" Margin="0,0,0,5"/>
+        <Button Grid.Row="2" Grid.ColumnSpan="2" Content="Modifier" HorizontalAlignment="Right" Click="btnModify_Click"/>
+    </Grid>
+</Window>

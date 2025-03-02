@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>image_2025-03-02_022836378.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="image_2025-03-02_022836378.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ffmpeg\" />
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DirectShowLib" Version="1.0.0" />
+    <PackageReference Include="FFME.Windows" Version="4.4.350" />
+    <PackageReference Include="FFmpeg.AutoGen" Version="7.0.0" />
+    <PackageReference Include="LibVLCSharp" Version="3.9.2" />
+    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.2" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3065.39" />
+    <PackageReference Include="SharpDX.Direct3D9" Version="4.2.0" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="libvlc\win-x64\libvlc.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="libvlc\win-x64\libvlccore.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
