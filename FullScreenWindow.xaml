@@ -11,6 +11,7 @@
 
     <Grid>
         <vlc:VideoView x:Name="videoViewFullScreen"
+                       MouseDown="VideoViewFullScreen_MouseDown"
                        HorizontalAlignment="Stretch"
                        VerticalAlignment="Stretch"
                        Background="Black"/>

@@ -122,6 +122,7 @@
 
         <!-- Player vidéo utilisant LibVLC -->
         <vlc:VideoView x:Name="videoView" Grid.Row="2" Grid.Column="1" Background="Black"
+                       MouseDown="VideoView_MouseDown"
                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5"/>
 
         <!-- Boutons dans un StackPanel en haut à droite -->

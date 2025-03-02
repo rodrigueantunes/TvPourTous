@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Input;
 using System.Windows.Interop;
 using LibVLCSharp.Shared;
 
@@ -82,6 +83,27 @@ namespace TvPourTous
                 _fullScreenMediaPlayer = null;
             }
             base.OnClosed(e);
+        }
+
+        private DateTime _lastClickTime;
+        private readonly TimeSpan _doubleClickThreshold = TimeSpan.FromMilliseconds(300);
+
+        private void VideoViewFullScreen_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                DateTime now = DateTime.Now;
+                TimeSpan interval = now - _lastClickTime;
+
+                if (interval < _doubleClickThreshold)
+                {
+                    // Double-clic détecté => Quitter le plein écran
+                    this.Close();
+                }
+
+                _lastClickTime = now;
+                e.Handled = true; // Empêcher d'autres éléments d'intercepter l'événement
+            }
         }
     }
 }
