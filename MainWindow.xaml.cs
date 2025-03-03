@@ -15,6 +15,8 @@ namespace TvPourTous
 {
     public partial class MainWindow : Window
     {
+        
+        
         private Dictionary<string, string> _channels = new Dictionary<string, string>();
         private const string M3UFilePath = "m3u.json";
 
@@ -30,9 +32,20 @@ namespace TvPourTous
         private MediaPlayer _mediaPlayer;
         private string _currentURL;
 
-        public MainWindow()
+        private readonly List<string> _selectedStates;
+        // Vos autres membres, par exemple _libVLC, _mediaPlayer, etc.
+
+        // Constructeur par défaut pour le designer
+        public MainWindow() : this(new List<string> { "v", "x", "u" })
+        {
+        }
+
+
+        public MainWindow(List<string> selectedStates)
         {
             InitializeComponent();
+            _selectedStates = selectedStates;
+            
             Core.Initialize();
 
             _libVLC = new LibVLC();
@@ -267,8 +280,8 @@ namespace TvPourTous
                         // Récupérer l'état de la chaîne
                         var channelStatus = channelsStatusList.FirstOrDefault(c => c.Name == currentChannel && c.Playlist == playlistName);
                         int order = 2; // Par défaut, pas d'état
-
                         string displayName;
+
                         if (channelStatus != null)
                         {
                             if (channelStatus.Etat == "v")
@@ -303,13 +316,15 @@ namespace TvPourTous
             {
                 listBoxChannels.Items.Add(channel.DisplayName);
             }
+
+            // Mise à jour du TextBlock avec le nombre de chaînes affichées
+            textBlockChannelCount.Text = $"Total chaînes : {listBoxChannels.Items.Count}";
         }
 
 
         private List<(string Name, string Url, int Order)> ParseM3UContentWithStatus(string content, string playlistName, List<ChannelStatus> channelsStatusList)
         {
             List<(string Name, string Url, int Order)> channels = new List<(string, string, int)>();
-
             string[] lines = content.Split('\n');
             string currentChannel = "";
 
@@ -325,26 +340,35 @@ namespace TvPourTous
                     {
                         string channelUrl = line.Trim();
 
-                        // 🔍 Vérifier le statut de la chaîne
+                        // Récupérer le statut de la chaîne
                         var channelStatus = channelsStatusList.FirstOrDefault(c => c.Name == currentChannel && c.Playlist == playlistName);
-                        int order = 2; // Par défaut, sans état
-                        string displayName = currentChannel;
-
-                        if (channelStatus != null)
+                        string etat = channelStatus?.Etat; // "v" ou "x"
+                        if (string.IsNullOrEmpty(etat))
                         {
-                            if (channelStatus.Etat == "v")
-                            {
-                                displayName = $"✅ {currentChannel}";
-                                order = 1; // Actif
-                            }
-                            else if (channelStatus.Etat == "x")
-                            {
-                                displayName = $"❌ {currentChannel}";
-                                order = 3; // Inactif
-                            }
+                            etat = "u"; // Sans état défini
                         }
 
-                        // 📌 Ajouter à la liste avec ordre
+                        // Vérifier si cet état est sélectionné
+                        if (!_selectedStates.Contains(etat))
+                        {
+                            // Si l'état n'est pas dans la sélection, ignorer cette chaîne
+                            continue;
+                        }
+
+                        int order = 2; // Par défaut, sans état
+
+                        string displayName = currentChannel;
+                        if (etat == "v")
+                        {
+                            displayName = $"✅ {currentChannel}";
+                            order = 1;
+                        }
+                        else if (etat == "x")
+                        {
+                            displayName = $"❌ {currentChannel}";
+                            order = 3;
+                        }
+
                         channels.Add((displayName, channelUrl, order));
                     }
                 }
@@ -466,7 +490,7 @@ namespace TvPourTous
             _channels.Clear();
             listBoxChannels.Items.Clear();
 
-            // 🎯 Tri par état ✅ (1) → 🟡 (2) → ❌ (3)
+            // Tri par état (1 = actif, 2 = inconnu, 3 = inactif)
             var sortedChannels = allChannels.OrderBy(c => c.Order).ToList();
 
             // Gestion des noms en doublon
@@ -475,7 +499,6 @@ namespace TvPourTous
             foreach (var (name, url, order) in sortedChannels)
             {
                 string newName = name;
-
                 if (nameCounter.ContainsKey(name))
                 {
                     nameCounter[name]++;
@@ -485,7 +508,6 @@ namespace TvPourTous
                 {
                     nameCounter[name] = 1;
                 }
-
                 _channels[newName] = url;
             }
 
@@ -495,21 +517,23 @@ namespace TvPourTous
                 listBoxChannels.Items.Add(channel);
             }
 
+            // Mise à jour du TextBlock avec le nombre de chaînes affichées
+            textBlockChannelCount.Text = $"Total chaînes : {listBoxChannels.Items.Count}";
+
             progressWindow.Close();
         }
 
 
 
 
+
         private async Task LoadAllM3UsAsync()
         {
-            // Afficher le popup de progression
             var progressWindow = new ProgressNotificationWindow();
             progressWindow.Show();
 
             // Liste temporaire pour stocker toutes les chaînes (nom original et URL)
             List<(string Name, string Url)> allChannels = new List<(string, string)>();
-
             int totalSources = _validSources.Count;
             int sourceIndex = 0;
 
@@ -567,9 +591,12 @@ namespace TvPourTous
                 listBoxChannels.Items.Add(channel);
             }
 
-            // Fermer le popup de progression une fois terminé
+            // Mise à jour du TextBlock avec le nombre de chaînes affichées
+            textBlockChannelCount.Text = $"Total chaînes : {listBoxChannels.Items.Count}";
+
             progressWindow.Close();
         }
+
 
 
         // Méthode de parsing d'un contenu M3U pour retourner une liste de (nom, url)
@@ -734,7 +761,11 @@ namespace TvPourTous
                 if (channel.Key.ToLower().Contains(filterText.ToLower()))
                     listBoxChannels.Items.Add(channel.Key);
             }
+
+            // Mise à jour du nombre de chaînes affichées
+            textBlockChannelCount.Text = $"Total chaînes : {listBoxChannels.Items.Count}";
         }
+
 
         private FullScreenWindow _fullScreenWindow;
 

@@ -10,6 +10,9 @@
     <Compile Update="AddM3USourceWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="ChannelStateFilterWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="EditM3USourceWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -22,6 +25,9 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="AddM3USourceWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="ChannelStateFilterWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="EditM3USourceWindow.xaml">

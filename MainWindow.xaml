@@ -125,8 +125,15 @@
                        MouseDown="VideoView_MouseDown"
                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5"/>
 
-        <!-- Boutons dans un StackPanel en haut à droite -->
+        <!-- Boutons et indicateur dans un StackPanel en haut à droite -->
         <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+            <!-- TextBlock indiquant le nombre total de chaînes -->
+            <TextBlock x:Name="textBlockChannelCount" 
+                       Text="Total chaînes : 0" 
+                       Foreground="White" 
+                       FontSize="14" 
+                       VerticalAlignment="Center" 
+                       Margin="0,0,10,0"/>
             <Button x:Name="btnManageSources" Content="Gérer les sources" Width="150" Height="30" Margin="0,0,10,0" Click="btnManageSources_Click"/>
             <Button x:Name="btnFullScreen" Content="Plein Écran" Width="150" Height="30" Click="BtnFullScreen_Click"/>
         </StackPanel>
