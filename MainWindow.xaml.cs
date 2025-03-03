@@ -122,6 +122,29 @@ namespace TvPourTous
             File.WriteAllText(M3UFilePath, json);
         }
 
+        private async Task LoadChannelsWithStatus()
+        {
+            string statusFilePath = "channels_status.json";
+
+            if (!File.Exists(statusFilePath))
+            {
+                MessageBox.Show("Le fichier channels_status.json est introuvable.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string json = await File.ReadAllTextAsync(statusFilePath);
+            var channelsStatusList = JsonSerializer.Deserialize<List<ChannelStatus>>(json);
+
+            listBoxChannels.Items.Clear();
+
+            foreach (var channel in channelsStatusList)
+            {
+                string displayName = channel.Etat == "v" ? $"✅ {channel.Name}" : $"❌ {channel.Name}";
+                listBoxChannels.Items.Add(displayName);
+            }
+        }
+
+
         /// <summary>
         /// Teste toutes les URL de _m3uSources et remplit comboBoxM3U uniquement avec celles qui répondent correctement.
         /// </summary>
@@ -193,14 +216,14 @@ namespace TvPourTous
             }
         }
 
-        private async void LoadM3U(string url)
+        private async void LoadM3U(string playlistName, string url)
         {
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
                     string m3uContent = await client.GetStringAsync(url);
-                    ParseM3U(m3uContent);
+                    ParseM3U(m3uContent, playlistName); // ✅ Ajout du paramètre `playlistName`
                 }
             }
             catch (Exception ex)
@@ -209,10 +232,83 @@ namespace TvPourTous
             }
         }
 
-        private void ParseM3U(string content)
+
+        private async void ParseM3U(string content, string playlistName)
         {
             _channels.Clear();
             listBoxChannels.Items.Clear();
+
+            string statusFilePath = "channels_status.json";
+            List<ChannelStatus> channelsStatusList = new List<ChannelStatus>();
+
+            if (File.Exists(statusFilePath))
+            {
+                string json = await File.ReadAllTextAsync(statusFilePath);
+                channelsStatusList = JsonSerializer.Deserialize<List<ChannelStatus>>(json);
+            }
+
+            string[] lines = content.Split('\n');
+            string currentChannel = "";
+            List<(string DisplayName, string Url, int Order)> sortedChannels = new List<(string, string, int)>();
+
+            foreach (string line in lines)
+            {
+                if (line.StartsWith("#EXTINF"))
+                {
+                    currentChannel = line.Split(',').Last().Trim();
+                }
+                else if (line.StartsWith("http"))
+                {
+                    if (!string.IsNullOrEmpty(currentChannel))
+                    {
+                        string channelUrl = line.Trim();
+                        _channels[currentChannel] = channelUrl;
+
+                        // Récupérer l'état de la chaîne
+                        var channelStatus = channelsStatusList.FirstOrDefault(c => c.Name == currentChannel && c.Playlist == playlistName);
+                        int order = 2; // Par défaut, pas d'état
+
+                        string displayName;
+                        if (channelStatus != null)
+                        {
+                            if (channelStatus.Etat == "v")
+                            {
+                                displayName = $"✅ {currentChannel}";
+                                order = 1; // Priorité haute pour les actives
+                            }
+                            else if (channelStatus.Etat == "x")
+                            {
+                                displayName = $"❌ {currentChannel}";
+                                order = 3; // Priorité basse pour les inactives
+                            }
+                            else
+                            {
+                                displayName = currentChannel;
+                            }
+                        }
+                        else
+                        {
+                            displayName = currentChannel; // Pas d’état défini
+                        }
+
+                        sortedChannels.Add((displayName, channelUrl, order));
+                    }
+                }
+            }
+
+            // Trier la liste des chaînes par ordre défini (1 = actif, 2 = inconnu, 3 = inactif)
+            sortedChannels = sortedChannels.OrderBy(c => c.Order).ToList();
+
+            foreach (var channel in sortedChannels)
+            {
+                listBoxChannels.Items.Add(channel.DisplayName);
+            }
+        }
+
+
+        private List<(string Name, string Url, int Order)> ParseM3UContentWithStatus(string content, string playlistName, List<ChannelStatus> channelsStatusList)
+        {
+            List<(string Name, string Url, int Order)> channels = new List<(string, string, int)>();
 
             string[] lines = content.Split('\n');
             string currentChannel = "";
@@ -227,24 +323,54 @@ namespace TvPourTous
                 {
                     if (!string.IsNullOrEmpty(currentChannel))
                     {
-                        _channels[currentChannel] = line.Trim();
-                        listBoxChannels.Items.Add(currentChannel);
+                        string channelUrl = line.Trim();
+
+                        // 🔍 Vérifier le statut de la chaîne
+                        var channelStatus = channelsStatusList.FirstOrDefault(c => c.Name == currentChannel && c.Playlist == playlistName);
+                        int order = 2; // Par défaut, sans état
+                        string displayName = currentChannel;
+
+                        if (channelStatus != null)
+                        {
+                            if (channelStatus.Etat == "v")
+                            {
+                                displayName = $"✅ {currentChannel}";
+                                order = 1; // Actif
+                            }
+                            else if (channelStatus.Etat == "x")
+                            {
+                                displayName = $"❌ {currentChannel}";
+                                order = 3; // Inactif
+                            }
+                        }
+
+                        // 📌 Ajouter à la liste avec ordre
+                        channels.Add((displayName, channelUrl, order));
                     }
                 }
             }
+
+            return channels;
         }
 
+
+
+
+
         private void listBoxChannels_SelectionChanged(object sender, SelectionChangedEventArgs e)
+{
+    if (listBoxChannels.SelectedItem != null)
+    {
+        // Supprimer les symboles "✅ " et "❌ " du début du nom de la chaîne
+        string channelName = listBoxChannels.SelectedItem.ToString().TrimStart('✅', '❌', ' ');
+
+        if (_channels.TryGetValue(channelName, out string url))
         {
-            if (listBoxChannels.SelectedItem != null)
-            {
-                string channelName = listBoxChannels.SelectedItem.ToString();
-                if (_channels.TryGetValue(channelName, out string url))
-                {
-                    PlayStream(url);
-                }
-            }
+            PlayStream(url);
         }
+    }
+}
+
 
         public void PlayStream(string url)
         {
@@ -280,16 +406,100 @@ namespace TvPourTous
             if (comboBoxM3U.SelectedItem != null)
             {
                 string selectedSource = comboBoxM3U.SelectedItem.ToString();
+                listBoxChannels.Items.Clear();
+                _channels.Clear();
+
                 if (selectedSource == "Tout")
                 {
-                    await LoadAllM3UsAsync();
+                    await LoadAllM3UsWithStatusAsync(); // ✅ Gère toutes les playlists
                 }
                 else if (_m3uSources.TryGetValue(selectedSource, out string url))
                 {
-                    LoadM3U(url);
+                    LoadM3U(selectedSource, url); // ✅ Ajout de `selectedSource` en argument
                 }
             }
         }
+
+
+        private async Task LoadAllM3UsWithStatusAsync()
+        {
+            var progressWindow = new ProgressNotificationWindow();
+            progressWindow.Show();
+
+            string statusFilePath = "channels_status.json";
+            List<ChannelStatus> channelsStatusList = new List<ChannelStatus>();
+
+            if (File.Exists(statusFilePath))
+            {
+                string json = await File.ReadAllTextAsync(statusFilePath);
+                channelsStatusList = JsonSerializer.Deserialize<List<ChannelStatus>>(json);
+            }
+
+            List<(string Name, string Url, int Order)> allChannels = new List<(string, string, int)>();
+            int totalSources = _validSources.Count;
+            int sourceIndex = 0;
+
+            foreach (var key in _validSources)
+            {
+                if (_m3uSources.TryGetValue(key, out string url))
+                {
+                    try
+                    {
+                        using (HttpClient client = new HttpClient())
+                        {
+                            string m3uContent = await client.GetStringAsync(url);
+                            var channels = ParseM3UContentWithStatus(m3uContent, key, channelsStatusList);
+                            allChannels.AddRange(channels);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Erreur pour la source {key}: {ex.Message}");
+                    }
+                }
+
+                sourceIndex++;
+                double progressPercentage = (sourceIndex / (double)totalSources) * 100;
+                progressWindow.UpdateProgress(progressPercentage);
+            }
+
+            _channels.Clear();
+            listBoxChannels.Items.Clear();
+
+            // 🎯 Tri par état ✅ (1) → 🟡 (2) → ❌ (3)
+            var sortedChannels = allChannels.OrderBy(c => c.Order).ToList();
+
+            // Gestion des noms en doublon
+            Dictionary<string, int> nameCounter = new Dictionary<string, int>();
+
+            foreach (var (name, url, order) in sortedChannels)
+            {
+                string newName = name;
+
+                if (nameCounter.ContainsKey(name))
+                {
+                    nameCounter[name]++;
+                    newName = $"{nameCounter[name]}-{name}";
+                }
+                else
+                {
+                    nameCounter[name] = 1;
+                }
+
+                _channels[newName] = url;
+            }
+
+            // Ajout final à la ListBox
+            foreach (var channel in _channels.Keys)
+            {
+                listBoxChannels.Items.Add(channel);
+            }
+
+            progressWindow.Close();
+        }
+
+
+
 
         private async Task LoadAllM3UsAsync()
         {
